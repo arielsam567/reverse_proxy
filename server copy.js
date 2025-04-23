@@ -1,40 +1,74 @@
 require("dotenv").config();
 const express = require("express");
+const axios = require("axios");
+const https = require("https");
 const app = express();
-const port = process.env.PORT || 3005;
+const port = 3005;
 
+// Middleware para log das requisições
 app.use((req, res, next) => {
-  console.log(`\n📢 [${new Date().toISOString()}] ${req.method} ${req.url}`);
-   next();
+  console.log(
+    `\n[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`
+  );
+  next();
 });
 
- app.get("/ping", (req, res) => {
+// Middleware para parsear JSON
+app.use(express.json());
+
+// Health Check
+app.get("/ping", (req, res) => {
   res.json({ status: "OK", message: "Server is running" });
 });
 
- 
+// Handler para todas as rotas /scope_api
+app.use("/scope_api", async (req, res) => {
+  const targetBase = "http://scope-api-qas.weg.net";
+  const apiPath = req.originalUrl.replace("/scope_api", "");
+  const targetUrl = targetBase + apiPath;
 
-const { createProxyMiddleware } = require("http-proxy-middleware");
-const apiProxy = createProxyMiddleware({
-  target: process.env.SCOPE_ENDPOINT.replace("https", "http"),
-  changeOrigin: true,
-  pathRewrite: { "^/scope": "" },
-  onProxyReq: (proxyReq, req, res) => {
-    console.log(
-      "🔥 Proxy chamado! URL:",
-      `${process.env.SCOPE_ENDPOINT}${req.originalUrl.replace("/api", "")}`
-    );
-  },
+  console.log(`🔁 Proxying to: ${targetUrl}`);
+
+  try {
+    const response = await axios({
+      method: req.method,
+      url: targetUrl,
+      data: req.body,
+      params: req.query,
+      // headers: {
+      //   ...req.headers,
+      //   host: new URL(targetBase).hostname,
+      // },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    });
+
+    console.log(`✅ Received ${response.status} from target`);
+
+    // Encaminha os headers necessários
+    res
+      .status(response.status)
+      .set({
+        "Content-Type": response.headers["content-type"],
+        "Cache-Control": response.headers["cache-control"],
+      })
+      .send(response.data);
+  } catch (error) {
+    console.error("⚠️ Proxy error:", error.message);
+
+    const statusCode = error.response?.status || 500;
+    const errorData = error.response?.data || {
+      error: "Proxy error",
+      details: error.message,
+    };
+
+    res.status(statusCode).json(errorData);
+  }
 });
-app.use("/scope", apiProxy);
-
 
 app.listen(port, () => {
-  console.log(`\nServidor rodando em http://localhost:${port}`);
+  console.log(`\n🚀 Proxy server running at http://localhost:${port}`);
+  console.log(`🔗 Proxying to: http://scope-api-qas.weg.net`);
   console.log(
-    `Teste:\ncurl http://localhost:3005/scope/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP`
+    `📌 Test with: curl http://localhost:${port}/scope_api/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP`
   );
 });
-//http://localhost:3005/scope/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP
-
-
