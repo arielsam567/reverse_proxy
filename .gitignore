@@ -84,3 +84,7 @@ modules/infrastructure/.settings/
 HELP.md
 
 __httptest__
+
+.env
+.env.local
+.env.development.local

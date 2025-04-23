@@ -4,7 +4,9 @@ const app = express();
 const axios = require("axios");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 
-const port = 3005;
+const port = process.env.PORT || 3005;
+const scopeEndpoint =
+  process.env.SCOPE_ENDPOINT || "https://scope-api-qas.weg.net";
 
 // Log de requisições
 app.use((req, res, next) => {
@@ -19,7 +21,7 @@ app.get("/ping", (req, res) => {
 app.get("/teste-ssl", async (req, res) => {
   try {
     const response = await axios.get(
-      "https://scope-api-qas.weg.net/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP",
+      `${scopeEndpoint}/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP`,
       {
         httpsAgent: new (require("https").Agent)({ rejectUnauthorized: false }),
       }
@@ -34,7 +36,7 @@ app.get("/teste-ssl", async (req, res) => {
 app.use(
   "/scope_api",
   createProxyMiddleware({
-    target: "https://scope-api-qas.weg.net",
+    target: scopeEndpoint,
     changeOrigin: true,
     secure: false,
     pathRewrite: { "^/scope_api": "" },
@@ -42,6 +44,7 @@ app.use(
       proxyReq: (proxyReq, req, res) => {
         // pega todos os headers atuais
         const headers = proxyReq.getHeaders();
+
 
         Object.keys(headers)
           .filter(
@@ -55,7 +58,7 @@ app.use(
             proxyReq.removeHeader(name);
             console.log(`🗑️ Removido header: ${name}`);
           });
-          console.log("headers", headers);
+        console.log("headers", headers);
         console.log(`🔁 Proxy → ${req.method} ${proxyReq.path}`);
       },
       proxyRes: (proxyRes, req, res) => {
@@ -71,11 +74,8 @@ app.use(
 
 app.listen(port, () => {
   console.log(`\nServidor proxy rodando em http://localhost:${port}`);
-  console.log(`Endpoint configurado: https://scope-api-qas.weg.net`);
+  console.log(`Endpoint configurado: ${scopeEndpoint}`);
   console.log(
     `Teste:\nhttp://localhost:${port}/scope_api/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP`
   );
 });
-
-
-//https://8zl74slh-3005.brs.devtunnels.ms/scope_api/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP
