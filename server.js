@@ -7,6 +7,11 @@ const { createProxyMiddleware } = require("http-proxy-middleware");
 const port = process.env.PORT || 3005;
 const scopeEndpoint =
   process.env.SCOPE_ENDPOINT || "https://scope-api-qas.weg.net";
+const scopePrefix = 'scope_api'
+
+
+const studioEndpoint = process.env.STUDIO_ENDPOINT || "https://studio-api-qas.weg.net";
+const studioPrefix = 'studio_api'
 
 // Log de requisições
 app.use((req, res, next) => {
@@ -34,7 +39,7 @@ app.get("/teste-ssl", async (req, res) => {
 });
 
 app.use(
-  "/scope_api",
+   `/${scopePrefix}`,
   createProxyMiddleware({
     target: scopeEndpoint,
     changeOrigin: true,
@@ -45,6 +50,44 @@ app.use(
         // pega todos os headers atuais
         const headers = proxyReq.getHeaders();
 
+
+        Object.keys(headers)
+          .filter(
+            (name) =>
+              // aqui vc define o que remover; por ex., cookies e sec-fetch-*
+              name === "cookie" ||
+              name.startsWith("sec-fetch-") ||
+              name === "referer"
+          )
+          .forEach((name) => {
+            proxyReq.removeHeader(name);
+            console.log(`🗑️ Removido header: ${name}`);
+          });
+        console.log("headers", headers);
+        console.log(`🔁 Proxy → ${req.method} ${proxyReq.path}`);
+      },
+      proxyRes: (proxyRes, req, res) => {
+        console.log(`🔁 Resposta: ${proxyRes.statusCode}`);
+      },
+      error: (err, req, res) => {
+        console.error("⚠️ Proxy error:", err.message);
+        res.status(500).json({ error: err.message });
+      },
+    },
+  })
+);
+
+app.use(
+  `/${studioPrefix}`,
+  createProxyMiddleware({
+    target: studioEndpoint,
+    changeOrigin: true,
+    secure: false,
+    pathRewrite: { "^/studio_api": "" },
+    on: {
+      proxyReq: (proxyReq, req, res) => {
+        // pega todos os headers atuais
+        const headers = proxyReq.getHeaders();
 
         Object.keys(headers)
           .filter(
