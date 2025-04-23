@@ -5,13 +5,20 @@ const axios = require("axios");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 
 const port = process.env.PORT || 3005;
-const scopeEndpoint =
-  process.env.SCOPE_ENDPOINT || "https://scope-api-qas.weg.net";
-const scopePrefix = 'scope_api'
 
-
-const studioEndpoint = process.env.STUDIO_ENDPOINT || "https://studio-api-qas.weg.net";
-const studioPrefix = 'studio_api'
+// Configuration objects for each API endpoint
+const apiConfigurations = [
+  {
+    prefix: process.env.SCOPE_PREFIX || "scope_api",
+    endpoint: process.env.SCOPE_ENDPOINT || "https://scope-api-qas.weg.net",
+    examplePath: "/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP",
+  },
+  {
+    prefix: process.env.STUDIO_PREFIX || "studio_api",
+    endpoint: process.env.STUDIO_ENDPOINT || "https://studio-api-qas.weg.net",
+    examplePath: "/api/example", // Change this to a real example path for studio API
+  },
+];
 
 // Log de requisições
 app.use((req, res, next) => {
@@ -25,6 +32,9 @@ app.get("/ping", (req, res) => {
 
 app.get("/teste-ssl", async (req, res) => {
   try {
+    const scopeEndpoint = apiConfigurations.find(
+      (c) => c.prefix === "scope_api"
+    ).endpoint;
     const response = await axios.get(
       `${scopeEndpoint}/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP`,
       {
@@ -38,23 +48,25 @@ app.get("/teste-ssl", async (req, res) => {
   }
 });
 
-app.use(
-   `/${scopePrefix}`,
-  createProxyMiddleware({
-    target: scopeEndpoint,
+/**
+ * Creates a proxy middleware with common configuration
+ * @param {string} target - The target URL to proxy to
+ * @param {string} pathPrefix - The path prefix to remove from the request
+ * @returns {Middleware} Configured proxy middleware
+ */
+const createApiProxy = (target, pathPrefix) => {
+  return createProxyMiddleware({
+    target,
     changeOrigin: true,
     secure: false,
-    pathRewrite: { "^/scope_api": "" },
+    pathRewrite: { [`^/${pathPrefix}`]: "" },
     on: {
       proxyReq: (proxyReq, req, res) => {
-        // pega todos os headers atuais
         const headers = proxyReq.getHeaders();
-
 
         Object.keys(headers)
           .filter(
             (name) =>
-              // aqui vc define o que remover; por ex., cookies e sec-fetch-*
               name === "cookie" ||
               name.startsWith("sec-fetch-") ||
               name === "referer"
@@ -63,6 +75,7 @@ app.use(
             proxyReq.removeHeader(name);
             console.log(`🗑️ Removido header: ${name}`);
           });
+
         console.log("headers", headers);
         console.log(`🔁 Proxy → ${req.method} ${proxyReq.path}`);
       },
@@ -74,51 +87,24 @@ app.use(
         res.status(500).json({ error: err.message });
       },
     },
-  })
-);
+  });
+};
 
-app.use(
-  `/${studioPrefix}`,
-  createProxyMiddleware({
-    target: studioEndpoint,
-    changeOrigin: true,
-    secure: false,
-    pathRewrite: { "^/studio_api": "" },
-    on: {
-      proxyReq: (proxyReq, req, res) => {
-        // pega todos os headers atuais
-        const headers = proxyReq.getHeaders();
-
-        Object.keys(headers)
-          .filter(
-            (name) =>
-              // aqui vc define o que remover; por ex., cookies e sec-fetch-*
-              name === "cookie" ||
-              name.startsWith("sec-fetch-") ||
-              name === "referer"
-          )
-          .forEach((name) => {
-            proxyReq.removeHeader(name);
-            console.log(`🗑️ Removido header: ${name}`);
-          });
-        console.log("headers", headers);
-        console.log(`🔁 Proxy → ${req.method} ${proxyReq.path}`);
-      },
-      proxyRes: (proxyRes, req, res) => {
-        console.log(`🔁 Resposta: ${proxyRes.statusCode}`);
-      },
-      error: (err, req, res) => {
-        console.error("⚠️ Proxy error:", err.message);
-        res.status(500).json({ error: err.message });
-      },
-    },
-  })
-);
+// Setup proxies for all configured APIs
+apiConfigurations.forEach((config) => {
+  app.use(`/${config.prefix}`, createApiProxy(config.endpoint, config.prefix));
+});
 
 app.listen(port, () => {
   console.log(`\nServidor proxy rodando em http://localhost:${port}`);
-  console.log(`Endpoint configurado: ${scopeEndpoint}`);
-  console.log(
-    `Teste:\nhttp://localhost:${port}/scope_api/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP`
-  );
+
+  // Log all configured endpoints
+  apiConfigurations.forEach((config) => {
+    console.log(
+      `\nEndpoint configurado (${config.prefix}): ${config.endpoint}`
+    );
+    console.log(
+      `Teste: http://localhost:${port}/${config.prefix}${config.examplePath}`
+    );
+  });
 });
