@@ -80,10 +80,12 @@ const createApiProxy = (target, pathPrefix) => {
         console.log(`🔁 Proxy → ${req.method} ${proxyReq.path}`);
       },
       proxyRes: (proxyRes, req, res) => {
+        proxyRes.headers["content-type"] = "application/json";
         console.log(`🔁 Resposta: ${proxyRes.statusCode}`);
       },
       error: (err, req, res) => {
         console.error("⚠️ Proxy error:", err.message);
+        res.setHeader("Content-Type", "application/json");
         res.status(500).json({ error: err.message });
       },
     },
