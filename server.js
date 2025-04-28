@@ -9,14 +9,20 @@ const port = process.env.PORT || 3005;
 // Configuration objects for each API endpoint
 const apiConfigurations = [
   {
-    prefix: process.env.SCOPE_PREFIX || "scope_api",
-    endpoint: process.env.SCOPE_ENDPOINT || "https://scope-api-qas.weg.net",
+    prefix: "scope_api",
+    endpoint: process.env.SCOPE_ENDPOINT,
     examplePath: "/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP",
   },
   {
-    prefix: process.env.STUDIO_PREFIX || "studio_api",
-    endpoint: process.env.STUDIO_ENDPOINT || "https://studio-api-qas.weg.net",
-    examplePath: "/api/example", // Change this to a real example path for studio API
+    prefix: "studio_api",
+    endpoint: process.env.STUDIO_ENDPOINT,
+    examplePath:
+      "/api/v1/content/search?type=MODEL_OBJECT&rootId=01849b03-b8bc-761e-80b7-4b851ccc8e4b&name=bici",
+  },
+  {
+    prefix: "model_api",
+    endpoint: process.env.MODEL_ENDPOINT,
+    examplePath: "/api/v1/",
   },
 ];
 
@@ -59,6 +65,8 @@ const createApiProxy = (target, pathPrefix) => {
     target,
     changeOrigin: true,
     secure: false,
+    timeout: 45000,
+    proxyTimeout: 45000,
     pathRewrite: { [`^/${pathPrefix}`]: "" },
     on: {
       proxyReq: (proxyReq, req, res) => {
@@ -73,10 +81,10 @@ const createApiProxy = (target, pathPrefix) => {
           )
           .forEach((name) => {
             proxyReq.removeHeader(name);
-            console.log(`🗑️ Removido header: ${name}`);
+            // console.log(`🗑️ Removido header: ${name}`);
           });
 
-        console.log("headers", headers);
+        // console.log("headers", headers);
         console.log(`🔁 Proxy → ${req.method} ${proxyReq.path}`);
       },
       proxyRes: (proxyRes, req, res) => {
