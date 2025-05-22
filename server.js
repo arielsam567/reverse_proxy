@@ -8,20 +8,61 @@ const port = process.env.PORT || 3005;
 
 // Configuration objects for each API endpoint
 const apiConfigurations = [
+  //SCOPE_LOCAL
   {
-    prefix: "scope_api",
-    endpoint: process.env.SCOPE_ENDPOINT,
+    prefix: "scope_local",
+    endpoint: process.env.SCOPE_LOCAL,
+    examplePath: "/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP",
+  },
+
+  //EDB_QA_API
+  {
+    prefix: "edb_qa_api",
+    endpoint: process.env.EDB_QA_ENDPOINT,
+    examplePath: "/api/v1/edb/objects/01849b03-b8bc-761e-80b7-4b851ccc8e4b",
+  },
+
+  //scope_api
+  {
+    prefix: "scope_qa_api",
+    endpoint: process.env.SCOPE_QA_ENDPOINT,
     examplePath: "/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP",
   },
   {
-    prefix: "studio_api",
-    endpoint: process.env.STUDIO_ENDPOINT,
+    prefix: "studio_qa_api",
+    endpoint: process.env.STUDIO_QA_ENDPOINT,
     examplePath:
       "/api/v1/content/search?type=MODEL_OBJECT&rootId=01849b03-b8bc-761e-80b7-4b851ccc8e4b&name=bici",
   },
   {
-    prefix: "model_api",
-    endpoint: process.env.MODEL_ENDPOINT,
+    prefix: "model_qa_api",
+    endpoint: process.env.MODEL_QA_ENDPOINT,
+    examplePath: "/api/v1/",
+  },
+
+  // dev
+  //EDB_QA_API
+  {
+    prefix: "edb_dev_api",
+    endpoint: process.env.EDB_DEV_ENDPOINT,
+    examplePath: "/api/v1/edb/objects/01849b03-b8bc-761e-80b7-4b851ccc8e4b",
+  },
+
+  //scope_api
+  {
+    prefix: "scope_dev_api",
+    endpoint: process.env.SCOPE_DEV_ENDPOINT,
+    examplePath: "/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP",
+  },
+  {
+    prefix: "studio_dev_api",
+    endpoint: process.env.STUDIO_DEV_ENDPOINT,
+    examplePath:
+      "/api/v1/content/search?type=MODEL_OBJECT&rootId=01849b03-b8bc-761e-80b7-4b851ccc8e4b&name=bici",
+  },
+  {
+    prefix: "model_dev_api",
+    endpoint: process.env.MODEL_DEV_ENDPOINT,
     examplePath: "/api/v1/",
   },
 ];
@@ -65,8 +106,8 @@ const createApiProxy = (target, pathPrefix) => {
     target,
     changeOrigin: true,
     secure: false,
-    timeout: 45000,
-    proxyTimeout: 45000,
+    timeout: 120000,
+    proxyTimeout: 120000,
     pathRewrite: { [`^/${pathPrefix}`]: "" },
     on: {
       proxyReq: (proxyReq, req, res) => {
