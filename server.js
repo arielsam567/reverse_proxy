@@ -8,6 +8,12 @@ const port = process.env.PORT || 3005;
 
 // Configuration objects for each API endpoint
 const apiConfigurations = [
+  //task endoint
+  {
+    prefix: "task_api",
+    endpoint: process.env.TASK_ENDPOINT,
+    examplePath: "",
+  },
   //SCOPE_LOCAL
   {
     prefix: "scope_local",
@@ -126,11 +132,11 @@ const createApiProxy = (target, pathPrefix) => {
           });
 
         // console.log("headers", headers);
-        console.log(`🔁 Proxy → ${req.method} ${proxyReq.path}`);
+        // console.log(`🔁 Proxy → ${req.method} ${proxyReq.path}`);
       },
       proxyRes: (proxyRes, req, res) => {
         proxyRes.headers["content-type"] = "application/json";
-        console.log(`🔁 Resposta: ${proxyRes.statusCode}`);
+        // console.log(`🔁 Resposta: ${proxyRes.statusCode}`);
       },
       error: (err, req, res) => {
         console.error("⚠️ Proxy error:", err.message);
