@@ -16,6 +16,10 @@ const proxies = [
   {
     config: config.studio,
     route: '/',
+  },
+  {
+    config: config.pricing,
+    route: '/',
   }
 ];
 
