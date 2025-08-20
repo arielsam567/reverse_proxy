@@ -40,7 +40,12 @@ if (url) {
 
 app.use((req, res, next) => {
   console.log(`\n📢 [${new Date().toISOString()}] ${req.method} ${req.url}`);
-
+  const realUrl = req.url; 
+  const apiConfig = apiConfigurations.find((c) => c.prefix === realUrl.split("/")[1]);
+  if (apiConfig) {
+    const restOfPath = realUrl.split("/").slice(2).join("/");
+    console.log(`🔗 URL da API: ${apiConfig.endpoint}/${restOfPath}`);
+  }
   next();
 });
 
@@ -48,28 +53,7 @@ app.get("/ping", (req, res) => {
   res.json({ status: "OK", message: "Server is running" });
 });
 
-app.get("/teste-ssl", async (req, res) => {
-  try {
-    const scopeEndpoint = apiConfigurations.find(
-      (c) => c.prefix === "scope_api"
-    ).endpoint;
-
-    const response = await axios.get(
-      `${scopeEndpoint}/api/v1/scopes/projection/scopeId/0K71HF7HWQ4DP`,
-
-      {
-        httpsAgent: new (require("https").Agent)({ rejectUnauthorized: false }),
-      }
-    );
-
-    res.json(response.data);
-  } catch (error) {
-    console.error("Erro direto:", error.response?.data || error.message);
-
-    res.status(500).json({ error: "Falha na comunicação SSL" });
-  }
-});
-
+ 
 /**
 
  * Creates a proxy middleware with common configuration
@@ -108,6 +92,15 @@ const createApiProxy = (target, pathPrefix) => {
 
       proxyRes: (proxyRes, req, res) => {
         proxyRes.headers["content-type"] = "application/json"; // console.log(`🔁 Resposta: ${proxyRes.statusCode}`);
+        console.log(`🔁 Resposta: ${proxyRes.statusCode}`)  ;
+          let body = "";
+          proxyRes.on("data", (chunk) => {
+            body += chunk.toString("utf8");
+          });
+
+          proxyRes.on("end", () => {
+            console.log("📦 Body da resposta:", body);
+          });
       },
       error: (err, req, res) => {
         console.error("⚠️ Proxy error:", err.message);
